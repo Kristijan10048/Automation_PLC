@@ -2,3 +2,7 @@
 	path = MY-PLC-oip-comms
 	url = ../MY-PLC-oip-comms
 	branch = main
+[submodule "MY-PLC-Open-Industry-Project"]
+	path = MY-PLC-Open-Industry-Project
+	url = ../MY-PLC-Open-Industry-Project
+	branch = master
