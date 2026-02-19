@@ -1,0 +1,4 @@
+[submodule "MY-PLC-oip-comms"]
+	path = MY-PLC-oip-comms
+	url = ../MY-PLC-oip-comms
+	branch = main

@@ -58,7 +58,13 @@ static std::vector<std::string> split(const std::string &s) {
     std::vector<std::string> tokens;
     std::istringstream iss(s);
     std::string token;
-    while (iss >> token) {
+    while (iss >> std::ws, !iss.eof()) {
+        if (iss.peek() == '"') {
+            iss.get(); // consume opening quote
+            std::getline(iss, token, '"');
+        } else {
+            iss >> token;
+        }
         tokens.push_back(token);
     }
     return tokens;
@@ -90,6 +96,11 @@ static void print_help() {
               << "\n"
               << "  poll <group> <tag_name> [type] [interval_ms]\n"
               << "      Continuously read a tag. Press Enter to stop.\n"
+              << "\n"
+              << "  browse <group> <node_id>\n"
+              << "      Browse children of an OPC UA node.\n"
+              << "      node_id format: ns=X;i=Y  or  ns=X;s=string\n"
+              << "      Start at root Objects folder: browse <group> ns=0;i=84\n"
               << "\n"
               << "  list\n"
               << "      List all tag groups and their tags.\n"
@@ -214,9 +225,26 @@ static bool opcua_init_tag(TagGroup &group, const std::string &tag_name) {
     OpcUaTag &tag = group.opc_ua_tags[tag_name];
     UA_Variant_init(&tag.value);
 
-    UA_UInt16 ns = (UA_UInt16)std::stoi(group.path);
+    // If tag_name is a full node ID string like "ns=4;s=..." or "ns=4;i=...",
+    // parse it directly (parse_node_id is defined later but called at runtime).
+    if (tag_name.substr(0, 3) == "ns=") {
+        size_t semi = tag_name.find(';');
+        if (semi != std::string::npos) {
+            UA_UInt16 ns = (UA_UInt16)std::stoi(tag_name.substr(3, semi - 3));
+            std::string id = tag_name.substr(semi + 1);
+            if (id.substr(0, 2) == "i=")
+                tag.node_id = UA_NODEID_NUMERIC(ns, (UA_UInt32)std::stoul(id.substr(2)));
+            else if (id.substr(0, 2) == "s=")
+                tag.node_id = UA_NODEID_STRING_ALLOC(ns, id.substr(2).c_str());
+            else
+                tag.node_id = UA_NODEID_NULL;
+            tag.initialized = true;
+            return true;
+        }
+    }
 
-    // Check if tag_name is numeric
+    // Legacy: namespace from group.path, identifier from tag_name
+    UA_UInt16 ns = (UA_UInt16)std::stoi(group.path);
     bool is_numeric = true;
     for (char c : tag_name) {
         if (!isdigit(c)) { is_numeric = false; break; }
@@ -444,6 +472,10 @@ static void cmd_read(const std::vector<std::string> &args) {
         auto tag_it = group.opc_ua_tags.find(tag_name);
         if (tag_it == group.opc_ua_tags.end()) {
             std::cerr << "Error: Tag '" << tag_name << "' not found. Register it first with 'tag'." << std::endl;
+            std::cerr << "Debug: " << group.opc_ua_tags.size() << " tag(s) registered in group '" << group_name << "':" << std::endl;
+            for (auto &t : group.opc_ua_tags) {
+                std::cerr << "  - '" << t.first << "' " << (t.second.initialized ? "(initialized)" : "(pending)") << std::endl;
+            }
             return;
         }
         OpcUaTag &tag = tag_it->second;
@@ -557,6 +589,94 @@ static void cmd_poll(const std::vector<std::string> &args) {
     }
 }
 
+// Parse "ns=X;i=Y", "ns=X;s=Y", or a plain number (treated as ns=0;i=N)
+static UA_NodeId parse_node_id(const std::string &s) {
+    size_t semi = s.find(';');
+    if (semi == std::string::npos) {
+        // plain numeric
+        return UA_NODEID_NUMERIC(0, (UA_UInt32)std::stoul(s));
+    }
+    UA_UInt16 ns = 0;
+    if (s.substr(0, 3) == "ns=")
+        ns = (UA_UInt16)std::stoi(s.substr(3, semi - 3));
+    std::string id = s.substr(semi + 1);
+    if (id.substr(0, 2) == "i=")
+        return UA_NODEID_NUMERIC(ns, (UA_UInt32)std::stoul(id.substr(2)));
+    if (id.substr(0, 2) == "s=")
+        return UA_NODEID_STRING_ALLOC(ns, id.substr(2).c_str());
+    return UA_NODEID_NULL;
+}
+
+static void cmd_browse(const std::vector<std::string> &args) {
+    // browse <group> <node_id>
+    // node_id examples: ns=0;i=84   ns=4;i=1001   "ns=4;s=|var|App.Var"
+    if (args.size() < 3) {
+        std::cerr << "Usage: browse <group> <node_id>" << std::endl;
+        std::cerr << "  Examples:" << std::endl;
+        std::cerr << "    browse myopc ns=0;i=84" << std::endl;
+        std::cerr << "    browse myopc ns=4;i=1001" << std::endl;
+        std::cerr << "    browse myopc \"ns=4;s=|var|App.MyVar\"" << std::endl;
+        return;
+    }
+
+    std::string group_name = args[1];
+    std::string node_id_str = args[2];
+
+    auto it = tag_groups.find(group_name);
+    if (it == tag_groups.end()) {
+        std::cerr << "Error: Tag group '" << group_name << "' not found." << std::endl;
+        return;
+    }
+
+    TagGroup &group = it->second;
+    if (group.protocol != "opc_ua" || !opcua_client_connected(group)) {
+        std::cerr << "Error: Group '" << group_name << "' is not a connected OPC UA group." << std::endl;
+        return;
+    }
+
+    UA_NodeId nodeId = parse_node_id(node_id_str);
+
+    UA_BrowseRequest bReq;
+    UA_BrowseRequest_init(&bReq);
+    bReq.requestedMaxReferencesPerNode = 0;
+    bReq.nodesToBrowse = UA_BrowseDescription_new();
+    bReq.nodesToBrowseSize = 1;
+    bReq.nodesToBrowse[0].nodeId = nodeId;
+    bReq.nodesToBrowse[0].resultMask = UA_BROWSERESULTMASK_ALL;
+
+    UA_BrowseResponse bResp = UA_Client_Service_browse(group.client, bReq);
+
+    if (bResp.responseHeader.serviceResult != UA_STATUSCODE_GOOD) {
+        std::cerr << "Error: Browse failed: " << UA_StatusCode_name(bResp.responseHeader.serviceResult) << std::endl;
+    } else {
+        size_t total = 0;
+        for (size_t i = 0; i < bResp.resultsSize; i++)
+            total += bResp.results[i].referencesSize;
+        std::cout << "Browse [" << node_id_str << "] -> " << total << " child(ren):" << std::endl;
+
+        for (size_t i = 0; i < bResp.resultsSize; i++) {
+            for (size_t j = 0; j < bResp.results[i].referencesSize; j++) {
+                UA_ReferenceDescription &ref = bResp.results[i].references[j];
+                std::string name((char *)ref.displayName.text.data, ref.displayName.text.length);
+                UA_NodeId &nid = ref.nodeId.nodeId;
+                std::cout << "  [" << name << "]  ";
+                if (nid.identifierType == UA_NODEIDTYPE_NUMERIC) {
+                    std::cout << "ns=" << nid.namespaceIndex << ";i=" << nid.identifier.numeric;
+                } else if (nid.identifierType == UA_NODEIDTYPE_STRING) {
+                    std::string sid((char *)nid.identifier.string.data, nid.identifier.string.length);
+                    std::cout << "ns=" << nid.namespaceIndex << ";s=" << sid;
+                } else {
+                    std::cout << "(other id type)";
+                }
+                std::cout << std::endl;
+            }
+        }
+    }
+
+    UA_BrowseRequest_clear(&bReq); // also frees nodeId string memory
+    UA_BrowseResponse_clear(&bResp);
+}
+
 static void cmd_list(const std::vector<std::string> &) {
     if (tag_groups.empty()) {
         std::cout << "No tag groups registered." << std::endl;
@@ -631,6 +751,8 @@ int main(int argc, char *argv[]) {
             cmd_write(args);
         } else if (cmd == "poll") {
             cmd_poll(args);
+        } else if (cmd == "browse") {
+            cmd_browse(args);
         } else if (cmd == "list") {
             cmd_list(args);
         } else if (cmd == "disconnect") {
