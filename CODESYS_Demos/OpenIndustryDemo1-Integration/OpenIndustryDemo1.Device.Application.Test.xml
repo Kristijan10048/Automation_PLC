@@ -14,10 +14,5 @@
       <Node name="g_xLamp1" nodeflags="SigTypeGvl ExportedVariable" type="T_BOOL" access="ReadWrite" />
       <Node name="g_xSwtch" nodeflags="SigTypeGvl ExportedVariable" type="T_BOOL" access="ReadWrite" />
     </Node>
-    <Node name="PLC_PRG" nodeflags="NodeTypeBranchNode SigTypeProgram">
-      <Node name="btn_xSwitch1" nodeflags="SigTypeProgram ExportedVariable" type="T_BOOL" access="ReadWrite" />
-      <Node name="conv_speed1" nodeflags="SigTypeProgram ExportedVariable" type="T_REAL" access="ReadWrite" />
-      <Node name="xMotor" nodeflags="SigTypeProgram ExportedVariable" type="T_BOOL" access="ReadWrite" />
-    </Node>
   </NodeList>
 </Symbolconfiguration>

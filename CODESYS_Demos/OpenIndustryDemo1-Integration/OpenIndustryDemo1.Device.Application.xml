@@ -2,22 +2,22 @@
 <Symbolconfiguration xmlns="http://www.3s-software.com/schemas/Symbolconfiguration.xsd">
   <Header>
     <Version>3.5.14.0</Version>
-    <SymbolConfigObject version="4.7.0.0" runtimeid="3.5.21.40" libversion="4.6.0.0" compiler="3.5.21.40" lmm="3.5.21.40" profile="CODESYS V3.5 SP21 Patch 4+" settings="SupportOPCUA, IncludeComments, IncludeAttributes, SymbolAttributeFilterType.All, SymbolCommentFilterType.PreferDocuComments, LayoutCalculator=OptimizedClientSideLayoutCalculator" />
+    <SymbolConfigObject version="4.7.0.0" runtimeid="3.5.21.40" libversion="4.6.0.0" compiler="3.5.21.40" lmm="3.5.21.40" profile="CODESYS V3.5 SP21 Patch 4+" settings="SupportOPCUA, IncludeComments, IncludeAttributes, UseEmptyNamespaceByDefault, XmlIncludeNodeFlags, SymbolAttributeFilterType.All, SymbolCommentFilterType.PreferDocuComments, LayoutCalculator=CompatibilityClientSideLayoutCalculator" />
     <ProjectInfo name="OpenIndustryDemo1" devicename="Device" appname="Application" />
   </Header>
   <TypeList>
     <TypeSimple name="T_BOOL" size="1" swapsize="0" typeclass="Bool" iecname="BOOL" />
+    <TypeSimple name="T_REAL" size="4" swapsize="4" typeclass="Real" iecname="REAL" />
   </TypeList>
   <NodeList>
-    <Node name="Application">
-      <Node name="g_xSwitch1">
-        <Node name="g_xLamp1" type="T_BOOL" access="ReadWrite" />
-        <Node name="g_xSwtch" type="T_BOOL" access="ReadWrite" />
-      </Node>
-      <Node name="PLC_PRG">
-        <Node name="btn_xSwitch1" type="T_BOOL" access="ReadWrite" />
-        <Node name="xMotor" type="T_BOOL" access="ReadWrite" />
-      </Node>
+    <Node name="" nodeflags="NodeTypeBranchNode BranchNodeExplicitNamespace SigTypeGvl">
+      <Node name="g_xLamp1" nodeflags="SigTypeGvl ExportedVariable" type="T_BOOL" access="ReadWrite" />
+      <Node name="g_xSwtch" nodeflags="SigTypeGvl ExportedVariable" type="T_BOOL" access="ReadWrite" />
+    </Node>
+    <Node name="PLC_PRG" nodeflags="NodeTypeBranchNode SigTypeProgram">
+      <Node name="btn_xSwitch1" nodeflags="SigTypeProgram ExportedVariable" type="T_BOOL" access="ReadWrite" />
+      <Node name="conv_speed1" nodeflags="SigTypeProgram ExportedVariable" type="T_REAL" access="ReadWrite" />
+      <Node name="xMotor" nodeflags="SigTypeProgram ExportedVariable" type="T_BOOL" access="ReadWrite" />
     </Node>
   </NodeList>
 </Symbolconfiguration>
