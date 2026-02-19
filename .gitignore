@@ -1,0 +1,10 @@
+/oip_shell/build/x64/
+/oip_shell/build/CMakeFiles/
+/oip_shell/build/oip_shell.dir/
+*.vcxproj
+/oip_shell/build/ALL_BUILD.vcxproj.filters
+/oip_shell/build/cmake_install.cmake
+/oip_shell/build/CMakeCache.txt
+/oip_shell/build/ZERO_CHECK.vcxproj.filters
+/oip_shell/build/oip_shell.sln
+/oip_shell/build/oip_shell.vcxproj.filters
