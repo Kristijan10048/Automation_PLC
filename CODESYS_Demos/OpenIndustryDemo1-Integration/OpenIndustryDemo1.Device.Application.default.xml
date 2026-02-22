@@ -19,6 +19,7 @@
       <Node name="btn_bMainPwr" nodeflags="SigTypeProgram ExportedVariable" type="T_BOOL" access="ReadWrite" />
       <Node name="btn_bMainPwrLamp" nodeflags="SigTypeProgram ExportedVariable" type="T_BOOL" access="ReadWrite" />
       <Node name="iConv1Spd" nodeflags="SigTypeProgram ExportedVariable" type="T_REAL" access="ReadWrite" />
+      <Node name="rLaserSensor" nodeflags="SigTypeProgram ExportedVariable" type="T_REAL" access="ReadWrite" />
     </Node>
   </NodeList>
 </Symbolconfiguration>
