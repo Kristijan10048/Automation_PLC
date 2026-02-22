@@ -91,6 +91,9 @@ static void print_help() {
               << "      Read a tag value. Types: int32 (default), int16, int8,\n"
               << "      uint32, uint16, uint8, int64, uint64, float32, float64, bit\n"
               << "\n"
+              << "  read_bit <group> <tag_name>\n"
+              << "      Read a boolean (bit) tag value. Prints 'true' or 'false'.\n"
+              << "\n"
               << "  write <group> <tag_name> <type> <value>\n"
               << "      Write a value to a tag.\n"
               << "\n"
@@ -501,6 +504,52 @@ static void cmd_read(const std::vector<std::string> &args) {
     }
 }
 
+static void cmd_read_bit(const std::vector<std::string> &args) {
+    // read_bit <group> <tag_name>
+    if (args.size() < 3) {
+        std::cerr << "Usage: read_bit <group> <tag_name>" << std::endl;
+        return;
+    }
+
+    std::string group_name = args[1];
+    std::string tag_name = args[2];
+
+    auto it = tag_groups.find(group_name);
+    if (it == tag_groups.end()) {
+        std::cerr << "Error: Tag group '" << group_name << "' not found." << std::endl;
+        return;
+    }
+
+    TagGroup &group = it->second;
+
+    if (group.protocol == "opc_ua") {
+        auto tag_it = group.opc_ua_tags.find(tag_name);
+        if (tag_it == group.opc_ua_tags.end()) {
+            std::cerr << "Error: Tag '" << tag_name << "' not found. Register it first with 'tag'." << std::endl;
+            return;
+        }
+        OpcUaTag &tag = tag_it->second;
+        if (!opcua_read_tag(group, tag)) return;
+        UA_Variant &v = tag.value;
+        bool val = (v.type == &UA_TYPES[UA_TYPES_BOOLEAN]) ? *(UA_Boolean *)v.data : false;
+        std::cout << tag_name << " = " << (val ? "true" : "false") << std::endl;
+    } else {
+        auto tag_it = group.plc_tags.find(tag_name);
+        if (tag_it == group.plc_tags.end()) {
+            std::cerr << "Error: Tag '" << tag_name << "' not found. Register it first with 'tag'." << std::endl;
+            return;
+        }
+        PlcTag &tag = tag_it->second;
+        if (!tag.initialized) {
+            std::cerr << "Error: Tag not initialized." << std::endl;
+            return;
+        }
+        if (!plc_read_tag(tag)) return;
+        bool val = plc_tag_get_bit(tag.tag_pointer, 0) != 0;
+        std::cout << tag_name << " = " << (val ? "true" : "false") << std::endl;
+    }
+}
+
 static void cmd_write(const std::vector<std::string> &args) {
     // write <group> <tag_name> <type> <value>
     if (args.size() < 5) {
@@ -747,6 +796,8 @@ int main(int argc, char *argv[]) {
             cmd_tag(args);
         } else if (cmd == "read") {
             cmd_read(args);
+        } else if (cmd == "read_bit") {
+            cmd_read_bit(args);
         } else if (cmd == "write") {
             cmd_write(args);
         } else if (cmd == "poll") {
