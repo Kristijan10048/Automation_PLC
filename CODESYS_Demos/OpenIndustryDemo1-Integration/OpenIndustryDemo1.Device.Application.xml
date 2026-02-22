@@ -2,7 +2,7 @@
 <Symbolconfiguration xmlns="http://www.3s-software.com/schemas/Symbolconfiguration.xsd">
   <Header>
     <Version>3.5.14.0</Version>
-    <SymbolConfigObject version="4.7.0.0" runtimeid="3.5.21.40" libversion="4.6.0.0" compiler="3.5.21.40" lmm="3.5.21.40" profile="CODESYS V3.5 SP21 Patch 4+" settings="SupportOPCUA, IncludeComments, IncludeAttributes, UseEmptyNamespaceByDefault, XmlIncludeNodeFlags, SymbolAttributeFilterType.All, SymbolCommentFilterType.PreferDocuComments, LayoutCalculator=CompatibilityClientSideLayoutCalculator" />
+    <SymbolConfigObject version="4.7.0.0" runtimeid="3.5.21.40" libversion="4.6.0.0" compiler="3.5.21.40" lmm="3.5.21.40" profile="CODESYS V3.5 SP21 Patch 4+" settings="SupportOPCUA, IncludeComments, IncludeAttributes, UseEmptyNamespaceByDefault, XmlIncludeNodeFlags, SymbolAttributeFilterType.All, SymbolCommentFilterType.PreferDocuComments, LayoutCalculator=OptimizedClientSideLayoutCalculator" />
     <ProjectInfo name="OpenIndustryDemo1" devicename="Device" appname="Application" />
   </Header>
   <TypeList>
@@ -15,9 +15,10 @@
       <Node name="g_xSwtch" nodeflags="SigTypeGvl ExportedVariable" type="T_BOOL" access="ReadWrite" />
     </Node>
     <Node name="PLC_PRG" nodeflags="NodeTypeBranchNode SigTypeProgram">
-      <Node name="btn_xSwitch1" nodeflags="SigTypeProgram ExportedVariable" type="T_BOOL" access="ReadWrite" />
-      <Node name="conv_speed1" nodeflags="SigTypeProgram ExportedVariable" type="T_REAL" access="ReadWrite" />
-      <Node name="xMotor" nodeflags="SigTypeProgram ExportedVariable" type="T_BOOL" access="ReadWrite" />
+      <Node name="bConv1Running" nodeflags="SigTypeProgram ExportedVariable" type="T_BOOL" access="ReadWrite" />
+      <Node name="btn_bMainPwr" nodeflags="SigTypeProgram ExportedVariable" type="T_BOOL" access="ReadWrite" />
+      <Node name="btn_bMainPwrLamp" nodeflags="SigTypeProgram ExportedVariable" type="T_BOOL" access="ReadWrite" />
+      <Node name="iConv1Spd" nodeflags="SigTypeProgram ExportedVariable" type="T_REAL" access="ReadWrite" />
     </Node>
   </NodeList>
 </Symbolconfiguration>
